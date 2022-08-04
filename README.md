@@ -1,5 +1,5 @@
 # vagrant-boxes-with-kubernetes
-Building a small cluster to run kubernetes prjects.
+Building a single node kubernetes cluster to run kubernetes prjects using k3s https://k3s.io
 
 ## requirements
 Uuntu > 21.04

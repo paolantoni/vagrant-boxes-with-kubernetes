@@ -29,3 +29,6 @@ helm repo add bitnami https://charts.bitnami.com/bitnami
 
 #installing k3s
 curl -sfL https://get.k3s.io | sh -
+sudo chown -R $USER:$USER /etc/rancher/k3s/
+helm --kubeconfig /etc/rancher/k3s/k3s.yaml list
+echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> ~/.bashrc
