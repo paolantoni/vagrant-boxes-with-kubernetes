@@ -25,10 +25,29 @@ curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
 sudo apt update
 sudo apt install -y helm
-helm repo add bitnami https://charts.bitnami.com/bitnami
+sudo helm repo add bitnami https://charts.bitnami.com/bitnami
 
 #installing k3s
 curl -sfL https://get.k3s.io | sh -
-sudo chown -R $USER:$USER /etc/rancher/k3s/
-helm --kubeconfig /etc/rancher/k3s/k3s.yaml list
+sudo chown -R vagrant /etc/rancher/k3s/
+sudo helm --kubeconfig /etc/rancher/k3s/k3s.yaml list
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> ~/.bashrc
+
+#sogno-demo DATABUS: install rabbitmq via helm
+# The `rabbitmq_values.yaml` file contains SOGNO specific overwrites of the default rabbitMQ values.
+cat > /etc/rancher/k3s/rabbitmq_values.yaml<< EOF
+extraPlugins: rabbitmq_mqtt
+
+service:
+  extraPorts:
+    - name: mqtt
+      port: 1883
+      targetPort: 1883
+  nodePort: LoadBalancer
+
+auth:
+  username: admin
+  password: admin
+EOF
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml && sudo helm install -n sogno-demo --create-namespace -f /etc/rancher/k3s/rabbitmq_values.yaml rabbitmq bitnami/rabbitmq
