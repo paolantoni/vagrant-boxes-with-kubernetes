@@ -3,7 +3,6 @@
 Vagrant.configure("2") do |config|
   config.vm.define "master" do |master|
     master.vm.box = "ubuntu/jammy64"        ## official canonical image 22.04 lts
-    master.vm.network "private_network", ip: "192.168.56.2", hostname: true
     master.vm.hostname = "master"
     master.vm.provider "virtualbox" do |v|
       v.name = "master"
