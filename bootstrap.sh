@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-sudo swapoff -a
+# Increase No of HPgs as required from sogno demo documentation
+echo 1024 | sudo tee /proc/sys/vm/nr_hugepages
+
 sudo ufw disable
 apt-get update
 apt-get install -y apt-transport-https ca-certificates curl gnupg2 software-properties-common net-tools
@@ -40,6 +42,10 @@ then
     sudo apt-get update
     sudo apt-get install -y helm
     sudo helm repo add bitnami https://charts.bitnami.com/bitnami
+    helm repo add sogno https://sogno-platform.github.io/helm-charts
+    helm repo add influxdata https://influxdata.github.io/helm-charts
+    helm repo add grafana https://grafana.github.io/helm-charts
+    helm repo update
 fi
 #
 
@@ -60,7 +66,7 @@ then
 fi
 
 echo "Pods running:"
-k3s kubectl get pods --all-namespaces
+k3s kubectl get pods --all-namespaces -o wide
 
 #sogno-demo DATABUS: install rabbitmq via helm
 # The `rabbitmq_values.yaml` file contains SOGNO specific overwrites of the default rabbitMQ values.
@@ -79,10 +85,30 @@ auth:
   password: admin
 EOF
 
-RABBITMQISRUNNING=`k3s kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get pod rabbitmq-0 -n sogno-demo --output="jsonpath={.status.containerStatuses[*].ready}" | cut -d' ' -f2`
+RABBITMQISRUNNING=`k3s kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get pod rabbitmq-0 --output="jsonpath={.status.containerStatuses[*].ready}" | cut -d' ' -f2`
 echo "Rabbitmq already running? $RABBITMQISRUNNING";
 if [ ! "$RABBITMQISRUNNING" = true ] ;
 then
     echo "Installazione di rabbitmq"
-    sudo helm install -n sogno-demo --create-namespace -f /etc/rancher/k3s/rabbitmq_values.yaml --kubeconfig /etc/rancher/k3s/k3s.yaml rabbitmq bitnami/rabbitmq
+    sudo helm install -f /etc/rancher/k3s/rabbitmq_values.yaml --kubeconfig /etc/rancher/k3s/k3s.yaml rabbitmq bitnami/rabbitmq
 fi
+
+#Pyvolt DPsim Demo
+git clone https://github.com/sogno-platform/example-deployments.git
+cd example-deployments/pyvolt-dpsim-demo
+
+# Influx db
+helm install influxdb influxdata/influxdb --kubeconfig /etc/rancher/k3s/k3s.yaml -f database/influxdb-helm-values.yaml
+# DB adapter
+helm install telegraf influxdata/telegraf --kubeconfig /etc/rancher/k3s/k3s.yaml -f ts-adapter/telegraf-values.yaml
+# Grafana http://localhost:31230  Username and password for Grafana are set to "demo".
+helm install grafana grafana/grafana --kubeconfig /etc/rancher/k3s/k3s.yaml -f visualization/grafana_values.yaml
+kubectl apply -f visualization/dashboard-configmap.yaml --kubeconfig /etc/rancher/k3s/k3s.yaml
+# Pintura http://localhost:31234
+helm install pintura sogno/pintura --kubeconfig /etc/rancher/k3s/k3s.yaml -f cim-editor/pintura_values.yaml
+# DPsim Simulation
+helm install dpsim-demo sogno/dpsim-demo --kubeconfig /etc/rancher/k3s/k3s.yaml
+# State-Estimation
+helm install pyvolt-demo sogno/pyvolt-service --kubeconfig /etc/rancher/k3s/k3s.yaml -f state-estimation/se_values.yaml
+echo "Pods running:"
+k3s kubectl get pods --all-namespaces -o wide
