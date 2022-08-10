@@ -68,6 +68,9 @@ fi
 echo "Pods running:"
 k3s kubectl get pods --all-namespaces -o wide
 
+echo "cluster info"
+k3s kubectl cluster-info
+
 if [ ! -d "example-deployments" ] 
 then
   #checkout examples demo
