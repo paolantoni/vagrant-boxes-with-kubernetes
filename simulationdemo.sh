@@ -37,7 +37,7 @@ k3s kubectl apply -f ./minio/configmap.yaml --kubeconfig /etc/rancher/k3s/k3s.ya
 #minikube ssh docker pull amazon/aws-cli
 
 echo "Creating sogno-platform bucket"
-k3s kubectl run --kubeconfig /etc/rancher/k3s/k3s.yaml--rm -i --tty aws-cli --overrides='
+k3s kubectl run --kubeconfig /etc/rancher/k3s/k3s.yaml --rm -i --tty aws-cli --overrides='
 {
   "apiVersion": "v1",
   "kind": "Pod",
@@ -84,6 +84,9 @@ k3s kubectl apply -f ./file-service/configmap.yaml
 
 
 echo "Starting dpsim api" &&
-helm install dpsim-api sogno/dpsim-api 
+sudo helm install dpsim-api sogno/dpsim-api --kubeconfig /etc/rancher/k3s/k3s.yaml
 echo "Starting dpsim worker" && 
-helm install dpsim-worker sogno/dpsim-worker
+sudo helm install dpsim-worker sogno/dpsim-worker --kubeconfig /etc/rancher/k3s/k3s.yaml
+
+echo "Pods running:"
+k3s kubectl get pods --all-namespaces -o wide
